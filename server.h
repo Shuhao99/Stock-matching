@@ -50,9 +50,11 @@ public:
 
     static string get_xml(const session* curr_session);
 
-    static void handle_symbol(database *db, const create req, std::vector<create> *responses);
+    static void handle_symbol(database* const db, const create req, std::vector<create> *responses);
 
-    static void handle_create(database *db, const create req, std::vector<create> *responses);
+    static void handle_create(database* const db, const create req, std::vector<create> *responses);
+
+    static string handle_tranxt(database* const db, string xml_msg);
 };
 
 #endif

@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<results>
+	<created id="1" />
+	<created id="2" />
+	<created id="3" />
+	<created id="4" />
+	<error id="1">Account already exist</error>
+	<created sym="A" id="1" />
+	<created sym="A" id="1" />
+	<created sym="A" id="2" />
+	<error sym="A" id="5">Account not found</error>
+	<created sym="A" id="1" />
+	<created sym="B" id="2" />
+	<created sym="B" id="3" />
+	<created sym="C" id="1" />
+	<created sym="A" id="4" />
+	<created sym="B" id="4" />
+</results>
+<?xml version="1.0"?>
+<results>
+	<status id="1">
+		<error id="1">Account ID doesn't exist.</error>
+	</status>
+	<status id="2">
+		<error id="2">Account ID doesn't exist.</error>
+	</status>
+	<status id="3">
+		<error id="3">Account ID doesn't exist.</error>
+	</status>
+	<status id="4">
+		<error id="4">Account ID doesn't exist.</error>
+	</status>
+</results>

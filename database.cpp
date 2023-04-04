@@ -19,6 +19,10 @@ try{
     return 0;
 };
 
+void database::disconnect(){
+    C->disconnect();
+};
+
 int database::init_database(){
     try{
         //Establish a connection to the database
@@ -124,7 +128,7 @@ int database::init_database(){
 }
 
 // delete open order from open table, add two executed order
-void deal(
+void database::deal(
     string open_o_id, string tran_id_1, string tran_id_2,
     string amount, string price, string symbol,
     pqxx::work* txn
@@ -143,6 +147,26 @@ void deal(
     "VALUES ($1, $2, $3, CURRENT_TIMESTAMP, $4)";
     txn->exec_params(sql_add, tran_id_1, amount, price, symbol);
     txn->exec_params(sql_add, tran_id_2, amount, price, symbol);
+}
+
+int database::verify_acc_id(string acc_id){
+    // Check if account exist
+    pqxx::nontransaction txn(*C);
+    
+    std::string sql = 
+    "SELECT * FROM account" 
+    " WHERE acc_id = " + to_string(acc_id);
+
+    pqxx::result res = txn.exec(sql);
+
+    if (res.empty()) {
+        std::cout << "Account not found" << std::endl;
+        txn.commit();
+        return 0;
+    }
+    
+    txn.commit();
+    return 1;
 }
 
 int database::handle_new_account(const create req)
@@ -456,14 +480,93 @@ transct database::handle_buy(transct req){
     return req;
 }
 
-transct database::handle_query(const transct req){
+transct database::handle_query(transct req){
+    // Check if require is valid
+    int status = verify_tranxt(to_string(req.acc_id), to_string(req.transct_id));
+
+    if (status == 1){
+        req.error_msg = "This transaction ID is invalid.";
+        return req;
+    }
+    if (status == 2){
+        req.error_msg = "This transaction is not yours.";
+        return req;
+    }
+
+    pqxx::work txn(*C);
+    std::string acc_id = std::to_string(req.acc_id);
+    std::string tran_id = std::to_string(req.transct_id);
 
 }
 
-transct database::handle_cancel(const transct req){
+transct database::handle_cancel(transct req){
+    // Check if require is valid
+    int status = verify_tranxt(to_string(req.acc_id), to_string(req.transct_id));
+
+    if (status == 1){
+        req.error_msg = "This transaction ID is invalid.";
+        return req;
+    }
+    if (status == 2){
+        req.error_msg = "This transaction is not yours.";
+        return req;
+    }
+
+    pqxx::work txn(*C);
+    std::string acc_id = std::to_string(req.acc_id);
+    std::string tran_id = std::to_string(req.transct_id);
+
+    // delete order from open table
+    std::string sql_lock = "SELECT * FROM open WHERE TRAN_ID = $1 FOR UPDATE";
+    pqxx::result res = txn.exec_params(sql_lock, tran_id);
+
+    string shares = res[0]["shares"].as<string>();
+    string symbol = res[0]["symbol"].as<string>();
+    
+    std::string sql_del = "DELETE FROM open WHERE TRAN_ID = $1";
+    txn.exec_params(sql_del, tran_id);
+
+    // add this order to cancled table
+    // add two record in executed row
+    std::string sql_add = 
+    "INSERT INTO executed (tran_id, shares, time, symbol) " 
+    "VALUES ($1, $2, CURRENT_TIMESTAMP, $3)";
+    txn.exec_params(tran_id, shares, symbol);
+
 
 }
 
+int database::verify_tranxt(string acc_id, string tran_id){
+    // verify transaction exist
+    pqxx::nontransaction txn(*C);
+    
+    std::string sql = 
+    "SELECT * FROM TRANSACTION" 
+    " WHERE TRAN_ID = " + to_string(tran_id);
+
+    pqxx::result res = txn.exec(sql);
+
+    if (res.empty()) {
+        // can not find this trxt record
+        txn.commit();
+        return 1;
+    }
+
+    // verify transaction belong to account
+    std::string sql2 = 
+    "SELECT ACC_ID FROM TRANSACTION" 
+    " WHERE TRAN_ID = " + to_string(tran_id);
+    pqxx::result res2 = txn.exec(sql2);
+
+    if (res2[0]["acc_id"].as<string>() != acc_id) {
+        // This trxt belong to other user
+        txn.commit();
+        return 2;
+    }
+    
+    txn.commit();
+    return 0;
+}
 
 void database::print_account(){
     
@@ -508,7 +611,6 @@ void database::print_open(){
         << " " << row["SYMBOL"].as<string>() << std::endl;
     }
 }
-
 
 void database::print_exe(){
     

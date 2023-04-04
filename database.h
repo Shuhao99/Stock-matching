@@ -21,6 +21,8 @@ public:
 
     int connect();
 
+    void disconnect();
+
     // 0 for no error
     // 1 for account exist
     int handle_new_account(const create req);
@@ -33,9 +35,25 @@ public:
 
     transct handle_buy(const transct req);
 
-    transct handle_query(const transct req);
+    transct handle_query(transct req);
 
-    transct handle_cancel(const transct req);
+    transct handle_cancel(transct req);
+
+    // return 0 if not find, return 1 if find
+    int verify_acc_id(string acc_id);
+
+    // return 1 for no trxt finded
+    // return 2 for tran_id belong to other user
+    // return 0 for ok
+    int verify_tranxt(string acc_id, string tran_id){
+
+    }
+    
+    void deal(
+        string open_o_id, string tran_id_1, string tran_id_2,
+        string amount, string price, string symbol,
+        pqxx::work* txn
+    );
 
     void print_account();
 
