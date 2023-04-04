@@ -4,16 +4,8 @@
 #include <iostream>
 #include <sstream>
 
-struct query_res
-{
-    /* data */
-};
-
-struct cancel_res
-{
-    /* data */
-};
-
 std::string generate_create_resp(std::vector<create> responses);
+
+std::string generate_wrong_acc_id_resp(std::vector<transct> responses);
 
 #endif

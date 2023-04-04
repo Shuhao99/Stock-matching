@@ -69,7 +69,64 @@ void * server::handle(void *curr_session_){
         db->print_symbols();
     }
     else if(root == "transactions"){
+        const std::vector<transct> reqs = get_transaction(xml_msg);
+        std::vector<transct> responses;
+        // verify account if not generate_wrong_acc_id_resp
+        for (transct req : reqs)
+        {
+            if(req.type == "order")
+            {
+                if(req.limit <= 0){
+                    req.error_msg = "The order's limit price is illegal, should >= 0";
+                    responses.push_back(req);
+                    continue;
+                }
+                if(req.amount == 0){
+                    req.error_msg = "The order's amount is not valid, should > 0";
+                    responses.push_back(req);
+                    continue;
+                }
+                
+                // sell 
+                if(req.amount < 0){
+                    transct res = db->handle_sell(req);
+                    if(res.error_msg == ""){
+                        cout << res.transct_id << ": created sell" << endl;
+                    }
+                    else{
+                        cout << ": error, " + res.error_msg << endl;
+                    }
+                    continue;
+                }
 
+                // buy
+                if(req.amount > 0){
+                    transct res = db->handle_buy(req);
+                    if(res.error_msg == ""){
+                        cout << res.transct_id << ": created buy" << endl;
+                    }
+                    else{
+                        cout << ": error, " + res.error_msg << endl;
+                    }
+                    continue;
+                }
+            }
+            
+            if(req.type == "cancel")
+            {
+                cout << "Cancel:" << " " << req.acc_id 
+                << " " << req.transct_id << endl;
+            }
+            
+            if(req.type == "query")
+            {
+                cout << "Query:" << " " << req.acc_id 
+                << " " << req.transct_id << endl;
+            }
+        }
+        db->print_open();
+        db->print_exe();
+        
     }
     else{
         cerr << "format wrong" << endl;
@@ -171,3 +228,5 @@ int server::create_session(const int &listener_fd, std::string * ip){
     *ip = inet_ntoa(addr->sin_addr);
     return client_connect_fd;
 }
+
+

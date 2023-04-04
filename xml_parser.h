@@ -13,18 +13,18 @@ struct create
     std::string sym;
     std::string err_msg = "";
 
-    int amount = 0;
-    int balance = 0;
+    double amount = 0;
+    double balance = 0;
 
     int acc_id = 0;
 
-    void set_account(int acc_id_, int balance_) {
+    void set_account(int acc_id_, double balance_) {
         acc_id = acc_id_;
         balance = balance_;
         type = "account";
     }
 
-    void set_symbol(int acc_id_, int amt_, std::string sym_) {
+    void set_symbol(int acc_id_, double amt_, std::string sym_) {
         acc_id = acc_id_;
         amount = amt_;
         sym = sym_;
@@ -32,45 +32,68 @@ struct create
     }
 };
 
-struct order
+struct exed
 {
-    std::string sym = NULL;
-    int acc_id;
-    int amount;
-    int limit;
-};
-
-struct cancel
-{
-    int acc_id;
-    int transct_id;
+    int exe_shares = -1;
+    double exe_price = -1;
+    std::string exe_time = "";
 };
 
 
-
-struct query
+struct query_res
 {
-    int acc_id;
-    int transct_id;
+    int open_shares = -1;
+    int cancled_shares = -1;
+    std::string cancled_time = "";
+    std::vector<exed> exes;
+};
+
+struct cancel_res
+{
+    int cancled_shares = -1;
+    std::string cancled_time = "";
+    std::vector<exed> exes;
 };
 
 struct transct
 {
-    std::vector<order> orders;
-    std::vector<cancel> cancels;
-    std::vector<query> queries;
+    std::string type = "";
+    std::string error_msg = "";
+    std::string sym = "";
+    
+    int acc_id;
+    int transct_id;
+
+    double amount;
+    double limit;
+
+    query_res qr;
+    cancel_res cr;
+
+    void set_order(std::string sym_, int acc_id_, double amt_, double limit_) {
+        acc_id = acc_id_;
+        amount = amt_;
+        sym = sym_;
+        limit = limit_;
+        type = "order";
+    }
+
+    void set_query(int acc_id_, int transct_id_) {
+        acc_id = acc_id_;
+        transct_id = transct_id_;
+        type = "query";
+    }
+
+    void set_cancel(int acc_id_, int transct_id_) {
+        acc_id = acc_id_;
+        transct_id = transct_id_;
+        type = "cancel";
+    }
 };
-
-
-// acount int acc_id, int balance
-// position string sys, int acc_id, int amount
-// order string sys, int acc_id, int amount, int limit
-// cancel string type, int trans_id
-// query
 
 const std::string get_root (const std::string xml_string);
 
-const transct get_transaction (std::string xml);
+const std::vector<transct> get_transaction (std::string xml_str);
 
 const std::vector<create> get_create(std::string xml);
 

@@ -29,9 +29,21 @@ public:
     // 1 for account not exist
     int handle_new_position(const create req);
 
+    transct handle_sell(const transct req);
+
+    transct handle_buy(const transct req);
+
+    transct handle_query(const transct req);
+
+    transct handle_cancel(const transct req);
+
     void print_account();
 
     void print_symbols();
+
+    void print_open();
+
+    void print_exe();
 
 };
 
