@@ -27,7 +27,7 @@ pugixml.o: pugixml/pugixml.cpp pugixml/pugixml.hpp pugixml/pugiconfig.hpp
 
 exchange_server: main.o server.o xml_parser.o socket.o database.o pugixml.o xml_generator.o
 	$(CXX) $(CXXFLAGS) -o exchange_server main.o server.o xml_parser.o socket.o database.o pugixml.o xml_generator.o $(LDFLAGS)
-	# rm -f main.o server.o xml_parser.o socket.o database.o pugixml.o xml_generator.o
+	rm -f main.o server.o xml_parser.o socket.o database.o pugixml.o xml_generator.o
 
 clean:
 	rm -f *~ *.o exchange_server
