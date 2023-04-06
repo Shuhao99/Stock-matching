@@ -2,7 +2,7 @@
 
 int main() {
   const char * port = "12345";
-  server * my_server = new server(port);
+  server * my_server = new server(port, 4);
   my_server->run();
   return 0;
 }

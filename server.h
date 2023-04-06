@@ -3,7 +3,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <stdio.h>
-#include <pthread.h>
 #include <time.h> 
 #include <iostream>
 #include <sstream>
@@ -19,6 +18,12 @@
 #include <unistd.h>
 #include <time.h> 
 
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <queue>
+#include <functional>
+
 
 #include "socket.h"
 #include "session.h"
@@ -33,20 +38,24 @@ private:
     static const int BUFFER_SIZE = 4096;
     const char * lisn_port;
     int connection_lisn_fd;
-    int id_counter;
-    std::vector<session> session_queue;
+    std::vector<std::thread> threads_;
+    std::queue<std::function<void()>> tasks_;
+    std::mutex queue_mutex_;
+    std::condition_variable condition_;
+    bool stop_;
 
 public:
-    server(const char * port) : 
-        lisn_port(port), 
-        connection_lisn_fd(-1){}
-    //~proxy_server() //delete cache
+    server(const char * port, int thread_num);
+    ~server();
+
+    template<typename... Args>
+    void AddTask(void(*function)(Args...), Args... args);
     
     void run();
 
     int create_session(const int &listener_fd, std::string * ip);
     
-    static void * handle(void* info);
+    static void handle(session curr_session);
 
     static string get_xml(const session* curr_session);
 

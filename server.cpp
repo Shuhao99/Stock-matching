@@ -1,7 +1,52 @@
 #include "server.h"
 
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-std::ofstream log_file("trade.log");
+server::server(const char * port, int num_threads = std::thread::hardware_concurrency()) : 
+lisn_port(port), 
+connection_lisn_fd(-1),
+stop_(false)
+{
+    // thread pool
+    for (int i = 0; i < num_threads; ++i) {
+        threads_.emplace_back([this] {
+            while (true) {
+                std::function<void()> task;
+                {
+                    std::unique_lock<std::mutex> lock(this->queue_mutex_);
+                    this->condition_.wait(lock, [this] { return this->stop_ || !this->tasks_.empty(); });
+                    if (this->stop_ && this->tasks_.empty()) {
+                        return;
+                    }
+                    task = std::move(this->tasks_.front());
+                    this->tasks_.pop();
+                }
+                task();
+            }
+        });
+    }
+}
+
+server::~server() {
+    {
+        std::unique_lock<std::mutex> lock(queue_mutex_);
+        stop_ = true;
+    }
+    condition_.notify_all();
+    for (std::thread& thread : threads_) {
+        thread.join();
+    }
+}
+
+template<typename... Args>
+void server::AddTask(void(*function)(Args...), Args... args) {
+    auto task = std::bind(function, std::forward<Args>(args)...);
+    {
+        std::unique_lock<std::mutex> lock(queue_mutex_);
+        tasks_.emplace([task] {
+            task();
+        });
+    }
+    condition_.notify_one();
+}
 
 void server::run(){
     database* db = new database();
@@ -12,9 +57,7 @@ void server::run(){
     this->connection_lisn_fd = build_listener(lisn_port);
     if (this->connection_lisn_fd == -1)
     {
-        pthread_mutex_lock(&mutex);
-        log_file << "(no id): ERROR proxy server initialize failed." << std::endl;
-        pthread_mutex_unlock(&mutex);
+        cerr << "ERROR proxy server initialize failed." << std::endl;
     }
 
     while (true)
@@ -23,29 +66,23 @@ void server::run(){
         int session_fd = create_session(connection_lisn_fd, &ip);
         if (session_fd < 0)
         {
-            pthread_mutex_lock(&mutex);
-            log_file << "(no id): ERROR proxy server connect failed." << std::endl;
-            pthread_mutex_unlock(&mutex);
+            cerr << "ERROR proxy server initialize failed." << std::endl;
         }
-        
+       
         session temp = {session_fd, ip};
-        this->session_queue.push_back(temp);
-        pthread_t thread;
-        pthread_create(&thread, NULL, handle, &(this->session_queue.back()));
+        this->AddTask(handle, temp);
     }
 
 }
 
-void * server::handle(void *curr_session_){
+void server::handle(session curr_session){
     //Receive xml from user
-    cout << "Enter handle" << endl;
-    session * curr_session = (session*)curr_session_;
-    std::string xml_msg = get_xml(curr_session);
+    std::string xml_msg = get_xml(& curr_session);
     
     if (xml_msg.empty() || xml_msg == "")
     {
        cerr << "Get Empty request from client." << endl;
-       return NULL;
+       return;
     }
     
     //parse xml, get root tag name
@@ -72,25 +109,30 @@ void * server::handle(void *curr_session_){
         }
         // TODO: generate response
         resp = generate_create_resp(responses);
-        db->print_account();
-        db->print_symbols();
     }
     else if(root == "transactions"){
         resp = handle_tranxt(db, xml_msg);
-        db->print_open();
-        db->print_exe();
     }
     else{
         cerr << "format wrong" << endl;
     }
 
     // send response back
-    send(curr_session->fd, resp.c_str(), resp.length(), 0);
+    send(curr_session.fd, resp.c_str(), resp.length(), 0);
     
+    // cout << endl;
+    // cout<<"New trxt: " << endl;
+    // cout << endl;
+
+    // db->print_account();
+    // db->print_open();
+    // db->print_exe();
+    // db->print_canceled();
+
     db->disconnect();
     delete db;
-    close(curr_session->fd);
-    return NULL;
+    close(curr_session.fd);
+    return;
 }
 
 
@@ -111,6 +153,10 @@ string server::get_xml(
 
     std::istringstream iss(msg);
     iss >> num;
+
+    if(num <= 0){
+        return "";
+    }
     
     // find first non-digit
     size_t non_digit_pos = msg.find_first_not_of("0123456789/n");
@@ -118,7 +164,7 @@ string server::get_xml(
     std::string xml_msg = msg.substr(non_digit_pos);
 
     //get the whole msg package
-    while ( rec_len > 0 && xml_msg.length() < num)
+    while ( rec_len > 0 && (int)xml_msg.length() < num)
     {
         rec_len = recv(curr_session->fd, buffer, sizeof(buffer), 0);
         if (rec_len > 0){
@@ -126,10 +172,6 @@ string server::get_xml(
             xml_msg = xml_msg + temp;
         }
     }
-
-    pthread_mutex_lock(&mutex);
-    log_file << xml_msg << std::endl;
-    pthread_mutex_unlock(&mutex);
 
     return xml_msg;
 }
@@ -140,83 +182,80 @@ string server::handle_tranxt(database* const db, string xml_msg){
     string resp = "";
     
     // verify account if not generate_wrong_acc_id_resp
-    if(!db->verify_acc_id(to_string(reqs[0].acc_id))){
-        // send response back
-        resp = generate_wrong_acc_id_resp(reqs);
+    if (reqs.empty())
+    {
+        cout << "Get empty transaction" << endl;
         return resp;
     }
+    
+    // if(!db->verify_acc_id(to_string(reqs[0].acc_id))){
+    //     // send response back
+    //     resp = generate_wrong_acc_id_resp(reqs);
+    //     return resp;
+    // }
 
     for (transct req : reqs)
     {
         if(req.type == "order")
         {
-            if(req.limit <= 0){
+            if(stod(req.limit) <= 0){
                 req.error_msg = "The order's limit price is illegal, should >= 0";
                 responses.push_back(req);
                 continue;
             }
-            if(req.amount == 0){
+            if(stod(req.amount) == 0){
                 req.error_msg = "The order's amount is not valid, should > 0";
                 responses.push_back(req);
                 continue;
             }
             
             // sell 
-            if(req.amount < 0){
+            if(stod(req.amount) < 0){
                 transct res = db->handle_sell(req);
-                if(res.error_msg == ""){
-                    cout << res.transct_id << ": created sell" << endl;
-                }
-                else{
-                    cout << ": error, " + res.error_msg << endl;
-                }
+                responses.push_back(res);
                 continue;
             }
 
             // buy
-            if(req.amount > 0){
+            if(stod(req.amount) > 0){
                 transct res = db->handle_buy(req);
-                if(res.error_msg == ""){
-                    cout << res.transct_id << ": created buy" << endl;
-                }
-                else{
-                    cout << ": error, " + res.error_msg << endl;
-                }
+                responses.push_back(res);
                 continue;
             }
         }
         
         if(req.type == "cancel")
         {
-            cout << "Cancel:" << " " << req.acc_id 
-            << " " << req.transct_id << endl;
+            transct resp = db->handle_cancel(req);
+            responses.push_back(resp);
+            continue;
         }
         
         if(req.type == "query")
         {
-            cout << "Query:" << " " << req.acc_id 
-            << " " << req.transct_id << endl;
+            transct resp = db->handle_query(req);
+            responses.push_back(resp);
+            continue;
         }
     }
+
+    resp = generate_trxn_resp(responses);
     return resp;
 }
 
 void server::handle_create(database* const db, const create req, std::vector<create> *responses){
     // create account 
     // try insert catch error exist
-    if(req.balance < 0){
+    if(stod(req.balance) < 0){
         create res = req;
         res.err_msg = "Balance is not positive";
-        cerr << res.err_msg << std::endl;
         responses->push_back(res);
         return;
     }
 
     if(db->handle_new_account(req)){
-        // TODO: add sth in response
         create res = req;
         res.err_msg = "Account already exist";
-        cerr << res.err_msg << std::endl;
         responses->push_back(res);
         return;
     }
@@ -225,7 +264,7 @@ void server::handle_create(database* const db, const create req, std::vector<cre
 }
 
 void server::handle_symbol(database* const db, const create req, std::vector<create> *responses){
-    if(req.amount < 0){
+    if(stod(req.amount) < 0){
         create res = req;
         res.err_msg = "Symbol ammount must be positive";
         cerr << res.err_msg << std::endl;

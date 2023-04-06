@@ -5,6 +5,8 @@
 #include <vector>
 #include <string>
 #include <fstream>
+#include <ctime>
+#include <iomanip>
 #include "xml_parser.h"
 
 using namespace std;
@@ -45,9 +47,7 @@ public:
     // return 1 for no trxt finded
     // return 2 for tran_id belong to other user
     // return 0 for ok
-    int verify_tranxt(string acc_id, string tran_id){
-
-    }
+    int verify_tranxt(string acc_id, string tran_id);
     
     void deal(
         string open_o_id, string tran_id_1, string tran_id_2,
@@ -55,9 +55,13 @@ public:
         pqxx::work* txn
     );
 
+    vector<exed> get_exes(work* txn, string tran_id);
+
+    string trans_time(const string timestamp);
+
     void print_account();
 
-    void print_symbols();
+    void print_canceled();
 
     void print_open();
 

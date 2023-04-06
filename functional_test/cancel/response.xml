@@ -1,0 +1,52 @@
+<?xml version="1.0"?>
+<results>
+	<created id="1" />
+	<created id="2" />
+	<created sym="A" id="1" />
+	<created sym="A" id="2" />
+</results>
+<?xml version="1.0"?>
+<results>
+	<opened id="1" />
+</results>
+<?xml version="1.0"?>
+<results>
+	<opened id="2" />
+</results>
+<?xml version="1.0"?>
+<results>
+	<canceled id="1">
+		<canceled shares="-10.100000000000001" time="1680754308" />
+		<executed shares="-10.000000" price="100.1" time="1680757908" />
+	</canceled>
+	<status id="1">
+		<status shares="-10.100000000000001" time="1680757908" />
+		<executed shares="-10.000000" price="100.1" time="1680757908" />
+	</status>
+</results>
+<?xml version="1.0"?>
+<results>
+	<created id="1" />
+	<created id="2" />
+	<created sym="A" id="1" />
+	<created sym="A" id="2" />
+</results>
+<?xml version="1.0"?>
+<results>
+	<opened id="1" />
+</results>
+<?xml version="1.0"?>
+<results>
+	<opened id="2" />
+</results>
+<?xml version="1.0"?>
+<results>
+	<canceled id="1">
+		<canceled shares="-10.100000000000001" time="1680755320" />
+		<executed shares="-10.000000" price="100.1" time="1680758919" />
+	</canceled>
+	<status id="1">
+		<status shares="-10.100000000000001" time="1680758920" />
+		<executed shares="-10.000000" price="100.1" time="1680758919" />
+	</status>
+</results>

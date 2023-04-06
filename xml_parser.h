@@ -13,18 +13,18 @@ struct create
     std::string sym;
     std::string err_msg = "";
 
-    double amount = 0;
-    double balance = 0;
+    std::string amount = "";
+    std::string balance = "";
 
     int acc_id = 0;
 
-    void set_account(int acc_id_, double balance_) {
+    void set_account(int acc_id_, std::string balance_) {
         acc_id = acc_id_;
         balance = balance_;
         type = "account";
     }
 
-    void set_symbol(int acc_id_, double amt_, std::string sym_) {
+    void set_symbol(int acc_id_, std::string amt_, std::string sym_) {
         acc_id = acc_id_;
         amount = amt_;
         sym = sym_;
@@ -34,23 +34,23 @@ struct create
 
 struct exed
 {
-    int exe_shares = -1;
-    double exe_price = -1;
+    std::string exe_shares = "";
+    std::string exe_price = "";
     std::string exe_time = "";
 };
 
 
 struct query_res
 {
-    int open_shares = -1;
-    int cancled_shares = -1;
+    std::string open_shares = "";
+    std::string cancled_shares = "";
     std::string cancled_time = "";
     std::vector<exed> exes;
 };
 
 struct cancel_res
 {
-    int cancled_shares = -1;
+    std::string cancled_shares = "";
     std::string cancled_time = "";
     std::vector<exed> exes;
 };
@@ -64,13 +64,13 @@ struct transct
     int acc_id;
     int transct_id;
 
-    double amount;
-    double limit;
+    std::string amount;
+    std::string limit;
 
     query_res qr;
     cancel_res cr;
 
-    void set_order(std::string sym_, int acc_id_, double amt_, double limit_) {
+    void set_order(std::string sym_, int acc_id_, std::string amt_, std::string limit_) {
         acc_id = acc_id_;
         amount = amt_;
         sym = sym_;

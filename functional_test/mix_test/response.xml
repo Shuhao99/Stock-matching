@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<results>
+	<created id="12345" />
+	<created sym="BIT" id="12345" />
+	<created sym="SYM" id="12345" />
+</results>
+<?xml version="1.0"?>
+<results>
+	<created id="23456" />
+	<created sym="BIT" id="23456" />
+	<created sym="SYM" id="23456" />
+</results>
+<?xml version="1.0"?>
+<results>
+	<opened id="1" sym="BIT" amount="3" limit="1.25" />
+</results>
+<?xml version="1.0"?>
+<results>
+	<opened id="2" sym="BIT" amount="-3" limit="1.25" />
+</results>
+<?xml version="1.0"?>
+<results>
+	<opened id="3" sym="BIT" amount="-3" limit="1.24" />
+</results>
+<?xml version="1.0"?>
+<results>
+	<canceled id="3">
+		<canceled shares="-3" time="1680660782" />
+	</canceled>
+</results>

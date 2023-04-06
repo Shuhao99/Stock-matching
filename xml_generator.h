@@ -8,4 +8,8 @@ std::string generate_create_resp(std::vector<create> responses);
 
 std::string generate_wrong_acc_id_resp(std::vector<transct> responses);
 
+std::string generate_trxn_resp(
+    std::vector<transct> responses
+);
+
 #endif

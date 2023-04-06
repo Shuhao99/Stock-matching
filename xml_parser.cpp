@@ -32,11 +32,9 @@ const std::vector<transct> get_transaction (std::string xml_str){
                 const char* sym = node.attribute("sym").value();
                 const char* amt = node.attribute("amount").value();
                 const char* limit = node.attribute("limit").value();
-                double amt_i = std::stod(std::string(amt));
-                double limit_d = std::stod(std::string(limit));
                 
                 transct t;
-                t.set_order(std::string(sym), curr_acc_id, amt_i, limit_d);
+                t.set_order(std::string(sym), curr_acc_id, std::string(amt), std::string(limit));
                 temp.push_back(t);
             } 
             
@@ -85,20 +83,20 @@ const std::vector<create> get_create(std::string xml_str){
                 const char* id = node.attribute("id").value();
                 const char* balance = node.attribute("balance").value();
                 int id_i = std::stoi(std::string(id));
-                double balance_i = std::stod(std::string(balance));
                 create c;
-                c.set_account(id_i, balance_i);
+                c.set_account(id_i, std::string(balance));
                 temp.push_back(c);
             } 
             else if (std::string(node.name()) == "symbol") {
                 const std::string sym_ = std::string(node.attribute("sym").value());
                 for (xml_node sym_node = node.first_child(); sym_node; sym_node = sym_node.next_sibling()){
+                    
                     const char* id = sym_node.attribute("id").value();
                     const char* amt = sym_node.text().get();
                     int id_i = std::stoi(std::string(id));
-                    double amt_i = std::stod(std::string(amt));
+
                     create c;
-                    c.set_symbol(id_i, amt_i, sym_);
+                    c.set_symbol(id_i, std::string(amt), sym_);
                     temp.push_back(c);
                 }
             }
