@@ -12,19 +12,22 @@
 </results>
 <?xml version="1.0"?>
 <results>
-	<opened id="1" sym="BIT" amount="3" limit="1.25" />
+	<opened id="1" />
 </results>
 <?xml version="1.0"?>
 <results>
-	<opened id="2" sym="BIT" amount="-3" limit="1.25" />
+	<opened id="2" />
 </results>
 <?xml version="1.0"?>
 <results>
-	<opened id="3" sym="BIT" amount="-3" limit="1.24" />
+	<opened id="3" />
 </results>
 <?xml version="1.0"?>
 <results>
-	<canceled id="3">
-		<canceled shares="-3" time="1680660782" />
+	<status id="2">
+		<open shares="-3.000000" />
+	</status>
+	<canceled id="2">
+		<canceled shares="-3.000000" time="1680807454" />
 	</canceled>
 </results>

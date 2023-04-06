@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<results>
+	<created id="1" />
+	<created id="2" />
+	<created sym="A" id="1" />
+	<created sym="A" id="2" />
+</results>
+<?xml version="1.0"?>
+<results>
+	<opened id="1" />
+</results>
+<?xml version="1.0"?>
+<results>
+	<opened id="2" />
+</results>
+<?xml version="1.0"?>
+<results>
+	<canceled id="1">
+		<canceled shares="-10.100000" time="1680801186" />
+		<executed shares="-10.000000" price="100.1" time="1680804786" />
+	</canceled>
+	<status id="1">
+		<canceled shares="-10.100000" time="1680804786" />
+		<executed shares="-10.000000" price="100.1" time="1680804786" />
+	</status>
+</results>

@@ -1,0 +1,89 @@
+<?xml version="1.0"?>
+<results>
+	<created id="1" />
+	<created id="2" />
+	<created id="3" />
+	<created id="4" />
+	<error id="1">Account already exist</error>
+	<created sym="A" id="1" />
+	<created sym="A" id="1" />
+	<created sym="A" id="2" />
+	<error sym="A" id="5">Account not found</error>
+	<created sym="A" id="1" />
+	<created sym="B" id="2" />
+	<created sym="B" id="3" />
+	<created sym="C" id="1" />
+	<created sym="A" id="4" />
+	<created sym="B" id="4" />
+</results>
+<?xml version="1.0"?>
+<results>
+	<error>Account ID doesn't exist.</error>
+	<opened id="1" />
+	<error>Account ID doesn't exist.</error>
+	<opened id="2" />
+	<opened id="3" />
+	<error>Account ID doesn't exist.</error>
+	<error>Account ID doesn't exist.</error>
+</results>
+<?xml version="1.0"?>
+<results>
+	<status id="1">
+		<open shares="-500.000000" />
+	</status>
+	<status id="2">
+		<open shares="5.000000" />
+	</status>
+	<status id="3">
+		<open shares="10.000000" />
+	</status>
+	<status id="4">
+		<error id="4">This transaction ID is invalid.</error>
+	</status>
+</results>
+<?xml version="1.0"?>
+<results>
+	<opened id="4" />
+	<opened id="5" />
+	<error>Account ID doesn't exist.</error>
+	<status id="6">
+		<error id="6">This transaction ID is invalid.</error>
+	</status>
+</results>
+<?xml version="1.0"?>
+<results>
+	<opened id="6" />
+	<opened id="7" />
+	<opened id="8" />
+</results>
+<?xml version="1.0"?>
+<results>
+	<status id="4">
+		<executed shares="-8.000000" price="50" time="1680812232" />
+	</status>
+	<status id="5">
+		<executed shares="10.000000" price="100" time="1680812232" />
+	</status>
+	<status id="1">
+		<error id="1">This transaction is not valid.</error>
+	</status>
+	<status id="2">
+		<error id="2">This transaction is not valid.</error>
+	</status>
+	<canceled id="4">
+		<error id="4">This order already canceled or executed.</error>
+	</canceled>
+	<canceled id="5">
+		<error id="5">This order already canceled or executed.</error>
+	</canceled>
+</results>
+<?xml version="1.0"?>
+<results>
+	<error>Account ID doesn't exist.</error>
+	<status id="1">
+		<error id="1">Invalid account ID.</error>
+	</status>
+	<status id="2">
+		<error id="2">Invalid account ID.</error>
+	</status>
+</results>

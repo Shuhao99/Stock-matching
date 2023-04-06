@@ -188,7 +188,7 @@ void database::deal(
     "VALUES ($1, $2, $3, CURRENT_TIMESTAMP, $4)";
     
     txn->exec_params(sql_add, tran_id_buy, amount, price, symbol);
-    txn->exec_params(sql_add, tran_id_sell, to_string(- stod(amount)), price, symbol);
+    txn->exec_params(sql_add, tran_id_sell, "-" + amount, price, symbol);
 }
 
 int database::verify_acc_id(string acc_id){
@@ -304,7 +304,7 @@ transct database::handle_sell(transct req){
     // verify position number and lock
     std::string sql_verify = 
     "SELECT NUM FROM position "
-    "WHERE acc_id = " + acc_id + " AND symbol = " + txn.quote(req.sym) +  " FOR UPDATE;"; 
+    "WHERE acc_id = " + acc_id + " AND symbol = " + txn.quote(req.sym); 
 
     // Execute the SQL statement and fetch the result
     pqxx::result r_verify = txn.exec(sql_verify);
@@ -313,7 +313,7 @@ transct database::handle_sell(transct req){
         txn.commit();
         return req;
     }
-    if (r_verify[0]["num"].as<double>() < - stod(req.amount)){
+    if (stod(r_verify[0]["num"].as<string>()) < - stod(req.amount)){
         req.error_msg = "You don't have enough this stock";
         txn.commit();
         return req;
@@ -339,15 +339,19 @@ transct database::handle_sell(transct req){
     double amt_remain = - stod(req.amount);
     for (auto buyer : all_buyers)
     {
-        int buyer_amt = buyer["shares"].as<int>();
+        double buyer_amt = buyer["shares"].as<double>();
+        if (amt_remain == 0)
+        {
+            break;
+        }
         
         // add money to seller's account
-        double fund_num = buyer_amt > amt_remain ? amt_remain : buyer_amt;
-        std::string sql_update_bal = 
-        "UPDATE account SET BALANCE = BALANCE + " + 
-        to_string(fund_num * (buyer["price"].as<double>())) +
-        " WHERE acc_id = " + acc_id + ";";
-        txn.exec0(sql_update_bal);
+        // double fund_num = buyer_amt > amt_remain ? amt_remain : buyer_amt;
+        // std::string sql_update_bal = 
+        // "UPDATE account SET BALANCE = BALANCE + " + 
+        // to_string(fund_num * stod((buyer["price"].as<string>()))) +
+        // " WHERE acc_id = " + acc_id + ";";
+        // txn.exec0(sql_update_bal);
 
         if (buyer_amt == amt_remain)
         {   
@@ -368,7 +372,7 @@ transct database::handle_sell(transct req){
             deal(
                 buyer["id"].as<string>(), buyer["tran_id"].as<string>(), 
                 tran_id,
-                to_string(buyer_amt), 
+                to_string(amt_remain), 
                 buyer["price"].as<string>(), 
                 req.sym, &txn
             );
@@ -377,7 +381,7 @@ transct database::handle_sell(transct req){
                 "INSERT INTO OPEN (TRAN_ID, SHARES, TIME, PRICE, SYMBOL)" 
                 "VALUES ($1, $2, $3, $4, $5) RETURNING TRAN_ID"
                 , buyer["tran_id"].as<string>(),
-                buyer_amt - amt_remain,
+                to_string(buyer_amt - amt_remain),
                 buyer["time"].as<string>(),
                 buyer["price"].as<string>(),
                 buyer["symbol"].as<string>()
@@ -407,7 +411,7 @@ transct database::handle_sell(transct req){
         pqxx::result res = txn.exec_params(
             "INSERT INTO OPEN (TRAN_ID, SHARES, TIME, PRICE, SYMBOL)" 
             "VALUES ($1, $2, CURRENT_TIMESTAMP, $3, $4) RETURNING TRAN_ID"
-            , tran_id, - amt_remain, limit, req.sym
+            , tran_id, "-" + to_string(amt_remain), limit, req.sym
         );
     }
     txn.commit();
@@ -434,7 +438,7 @@ transct database::handle_buy(transct req){
 
     // Execute the SQL statement and fetch the result
     pqxx::result r_verify = txn_red.exec(sql_verify);
-    if (r_verify[0]["balance"].as<double>() < stod(req.amount) * stod(req.limit)){
+    if (stod(r_verify[0]["balance"].as<string>()) < stod(req.amount) * stod(req.limit)){
         req.error_msg = "You don't have enough money";
         txn_red.commit();
         return req;
@@ -459,13 +463,18 @@ transct database::handle_buy(transct req){
     // find all qualified opened buying orders
     std::string find_buyer = 
     "SELECT * FROM open WHERE "
-    "shares < 0 AND price <= $1 AND symbol = $2 ORDER BY price ASC, time ASC FOR UPDATE";
+    "shares < 0 AND price <= $1 AND symbol = $2 ORDER BY price ASC, time ASC";
     pqxx::result all_sellers = txn.exec_params(find_buyer, limit, req.sym);
 
     double amt_remain = stod(req.amount);
     for (auto seller : all_sellers)
     {
-        double seller_amt = - seller["shares"].as<double>();
+        if (amt_remain == 0)
+        {
+            break;
+        }
+        
+        double seller_amt = - stod(seller["shares"].as<string>());
 
         // buyer's refund number
         double refund_num = seller_amt > amt_remain ? amt_remain : seller_amt;
@@ -498,7 +507,7 @@ transct database::handle_buy(transct req){
                 "INSERT INTO OPEN (TRAN_ID, SHARES, TIME, PRICE, SYMBOL)" 
                 "VALUES ($1, $2, $3, $4, $5) RETURNING TRAN_ID"
                 , seller["tran_id"].as<string>(),
-                - (seller_amt - amt_remain),
+                "-" + to_string(seller_amt - amt_remain),
                 seller["time"].as<string>(),
                 seller["price"].as<string>(),
                 seller["symbol"].as<string>()
@@ -522,7 +531,7 @@ transct database::handle_buy(transct req){
         // buyer's refund
         std::string sql_update_refund = 
         "UPDATE account SET BALANCE = BALANCE + " + 
-        to_string(refund_num * (stod(req.limit) - seller["price"].as<double>())) +
+        to_string(refund_num * (stod(req.limit) - stod(seller["price"].as<string>()))) +
         " WHERE acc_id = " + acc_id + ";";
         txn.exec0(sql_update_refund);
     }
@@ -533,7 +542,7 @@ transct database::handle_buy(transct req){
         pqxx::result res = txn.exec_params(
             "INSERT INTO OPEN (TRAN_ID, SHARES, TIME, PRICE, SYMBOL)" 
             "VALUES ($1, $2, CURRENT_TIMESTAMP, $3, $4) RETURNING TRAN_ID"
-            , tran_id, amt_remain, limit, req.sym
+            , tran_id, to_string(amt_remain), limit, req.sym
         );
     }
     
@@ -618,14 +627,14 @@ transct database::handle_cancel(transct req){
 
     if (res.empty())
     {
-        req.error_msg = "This order already canceled.";
+        req.error_msg = "This order already canceled or executed.";
         return req;
     }
     
 
     string shares = res[0]["shares"].as<string>();
-    double shares_d = res[0]["shares"].as<double>();
-    double price_d = res[0]["price"].as<double>();
+    double shares_d = stod(res[0]["shares"].as<string>());
+    double price_d = stod(res[0]["price"].as<string>());
     string symbol = res[0]["symbol"].as<string>();
     
     std::string sql_del = "DELETE FROM open WHERE TRAN_ID = $1";

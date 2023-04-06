@@ -187,12 +187,6 @@ string server::handle_tranxt(database* const db, string xml_msg){
         cout << "Get empty transaction" << endl;
         return resp;
     }
-    
-    // if(!db->verify_acc_id(to_string(reqs[0].acc_id))){
-    //     // send response back
-    //     resp = generate_wrong_acc_id_resp(reqs);
-    //     return resp;
-    // }
 
     for (transct req : reqs)
     {

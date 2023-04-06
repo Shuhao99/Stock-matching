@@ -49,6 +49,7 @@ def createClient():
 def createRequest(id, balance, symbols):
     client = createClient()
     client.sendall(createXml(str(id), balance, symbols))
+    client.recv(99999)
     printResponse(client)
 
 
@@ -220,7 +221,9 @@ def test(iterations):
         queryRequest(33, ["32"])
         count = count + 1
     endTime = int(1000 * time.time())
-    print("Total Time with iterations of " + str(iterations) + " is " + str(endTime - startTime))
+
+    with open('scalability_res.txt', mode='a') as f:
+        f.write("Total Time with iterations of " + str(iterations) + " is " + str(endTime - startTime) + "\n")
 
 
 if __name__ == "__main__":

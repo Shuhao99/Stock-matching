@@ -1,0 +1,5 @@
+Total Time with iterations of 10 is 5491
+Total Time with iterations of 20 is 11084
+Total Time with iterations of 30 is 17016
+Total Time with iterations of 40 is 22800
+Total Time with iterations of 50 is 28803
