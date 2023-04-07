@@ -1,0 +1,11 @@
+1-core
+Total Time: 194921
+Throughput (query/ms): 0.05130283550771851
+
+2-cores
+Total Time: 139936
+Throughput (query/ms): 0.07146123942373657
+
+4-cores
+Total Time: 78868
+Throughput (query/ms): 0.1267941370391033

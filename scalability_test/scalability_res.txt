@@ -1,5 +1,36 @@
-Total Time with iterations of 10 is 5491
-Total Time with iterations of 20 is 11084
-Total Time with iterations of 30 is 17016
-Total Time with iterations of 40 is 22800
-Total Time with iterations of 50 is 28803
+1-core
+Total Time with iterations of 50 is 54476
+Total Time with iterations of 50 is 54590
+Total Time with iterations of 50 is 52784
+Total Time with iterations of 50 is 50886
+Total Time with iterations of 50 is 51782
+Total Time with iterations of 50 is 51493
+Total Time with iterations of 50 is 55260
+Total Time with iterations of 50 is 56548
+Total Time with iterations of 50 is 55141
+Total Time with iterations of 50 is 56567
+
+2-cores
+Total Time with iterations of 50 is 51002
+Total Time with iterations of 50 is 47017
+Total Time with iterations of 50 is 47997
+Total Time with iterations of 50 is 48625
+Total Time with iterations of 50 is 48561
+Total Time with iterations of 50 is 46313
+Total Time with iterations of 50 is 47980
+Total Time with iterations of 50 is 46989
+Total Time with iterations of 50 is 45011
+Total Time with iterations of 50 is 44286
+
+4-cores
+Total Time with iterations of 50 is 41661
+Total Time with iterations of 50 is 39980
+Total Time with iterations of 50 is 38853
+Total Time with iterations of 50 is 39585
+Total Time with iterations of 50 is 39748
+Total Time with iterations of 50 is 39347
+Total Time with iterations of 50 is 41028
+Total Time with iterations of 50 is 39531
+Total Time with iterations of 50 is 40176
+Total Time with iterations of 50 is 42041
+

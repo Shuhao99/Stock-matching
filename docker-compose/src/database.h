@@ -52,7 +52,7 @@ public:
     void deal(
         string open_o_id, string tran_id_1, string tran_id_2,
         string amount, string price, string symbol,
-        pqxx::work* txn
+        pqxx::work* txn, int sell
     );
 
     vector<exed> get_exes(work* txn, string tran_id);

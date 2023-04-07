@@ -4,11 +4,11 @@ int database::connect(){
 try{
         //Establish a connection to the database
         //Parameters: database name, user name, user password
-#if DOCKER
+// #if DOCKER
     C = new connection("dbname=stock user=postgres password=passw0rd host=stock_db port=5432");
-#else
-    C = new connection("dbname=stock user=postgres password=passw0rd");    
-#endif
+// #else
+//     C = new connection("dbname=stock user=postgres password=passw0rd");    
+// #endif
         if (!C->is_open()) {
             return 1;
         } 
@@ -27,11 +27,11 @@ int database::init_database(){
     try{
         //Establish a connection to the database
         //Parameters: database name, user name, user password
-#if DOCKER
+// #if DOCKER
     C = new connection("dbname=stock user=postgres password=passw0rd host=stock_db port=5432");
-#else
-    C = new connection("dbname=stock user=postgres password=passw0rd");    
-#endif
+// #else
+//     C = new connection("dbname=stock user=postgres password=passw0rd");    
+// #endif
         if (C->is_open()) {
             cout << "Initialized database successfully: " << C->dbname() << endl;
         } else {
@@ -131,11 +131,11 @@ int database::init_database(){
 void database::deal(
     string open_o_id, string tran_id_buy, string tran_id_sell,
     string amount, string price, string symbol,
-    pqxx::work* txn
+    pqxx::work* txn, int sell
 )
 {
     // delete dealed order from open
-    std::string sql_lock = "SELECT * FROM open WHERE id = $1 FOR UPDATE";
+    std::string sql_lock = "SELECT * FROM open WHERE id = $1";
     txn->exec_params(sql_lock, open_o_id);
     
     std::string sql_del = "DELETE FROM open WHERE id = $1";
@@ -143,20 +143,22 @@ void database::deal(
     
     // get buyer's id
     std::string get_b_id = 
-    "SELECT ACC_ID FROM TRANSACTION WHERE TRAN_ID = $1 FOR UPDATE";
+    "SELECT ACC_ID FROM TRANSACTION WHERE TRAN_ID = $1";
     pqxx::result res_b_id = txn->exec_params(get_b_id, tran_id_buy);
     string b_id = res_b_id[0]["ACC_ID"].as<string>();
 
     // get seller's id
     std::string get_s_id = 
-    "SELECT ACC_ID FROM TRANSACTION WHERE TRAN_ID = $1 FOR UPDATE";
+    "SELECT ACC_ID FROM TRANSACTION WHERE TRAN_ID = $1";
     pqxx::result res_s_id = txn->exec_params(get_s_id, tran_id_sell);
     string s_id = res_s_id[0]["ACC_ID"].as<string>();
     
     // seller add money
-    std::string lock1 = 
-    "SELECT * FROM account WHERE acc_id = $1 FOR UPDATE";
-    txn->exec_params(lock1, s_id);
+    if(!sell){
+        std::string lock1 = 
+        "SELECT * FROM account WHERE acc_id = $1 FOR UPDATE";
+        txn->exec_params(lock1, s_id);
+    }
     
     std::string sql_update_refund = 
     "UPDATE account SET BALANCE = BALANCE + " + 
@@ -165,11 +167,15 @@ void database::deal(
     txn->exec0(sql_update_refund);
     
     // buyer add position
-    std::string lock2 = 
-    "SELECT * FROM POSITION "
-    "WHERE acc_id = $1 AND SYMBOL = $2 "
-    "FOR UPDATE";
-    txn->exec_params(lock2, b_id, symbol);
+    //dead
+    if(sell){
+        std::string lock2 = 
+        "SELECT * FROM POSITION "
+        "WHERE acc_id = $1 AND SYMBOL = $2 "
+        "FOR UPDATE";
+        txn->exec_params(lock2, b_id, symbol);
+
+    }
     
     std::string sql_update_pos = 
     "UPDATE POSITION SET NUM = NUM + " + 
@@ -179,10 +185,6 @@ void database::deal(
     txn->exec0(sql_update_pos);
 
     // add two record in executed row
-    // string :: sql_lock_ = 
-    // "SELECT * INTO executed (tran_id, shares, price, time, symbol) " 
-    // "VALUES ($1, $2, $3, CURRENT_TIMESTAMP, $4)";
-
     std::string sql_add = 
     "INSERT INTO executed (tran_id, shares, price, time, symbol) " 
     "VALUES ($1, $2, $3, CURRENT_TIMESTAMP, $4)";
@@ -295,8 +297,8 @@ transct database::handle_sell(transct req){
         req.error_msg = "Invalid account ID.";
         return req;
     }
-
-    pqxx::work txn(*C);
+    // handle reduce position
+    pqxx::work txn_(*C);
     std::string acc_id = std::to_string(req.acc_id);
     std::string limit = req.limit;
     std::string amt = std::to_string( - stod(req.amount));
@@ -304,31 +306,36 @@ transct database::handle_sell(transct req){
     // verify position number and lock
     std::string sql_verify = 
     "SELECT NUM FROM position "
-    "WHERE acc_id = " + acc_id + " AND symbol = " + txn.quote(req.sym); 
+    "WHERE acc_id = " + acc_id + " AND symbol = " + txn_.quote(req.sym) + "FOR UPDATE"; 
 
     // Execute the SQL statement and fetch the result
-    pqxx::result r_verify = txn.exec(sql_verify);
+    pqxx::result r_verify = txn_.exec(sql_verify);
     if (r_verify.empty()) {
         req.error_msg = "You don't hold this stock";
-        txn.commit();
+        txn_.commit();
         return req;
     }
     if (stod(r_verify[0]["num"].as<string>()) < - stod(req.amount)){
         req.error_msg = "You don't have enough this stock";
-        txn.commit();
+        txn_.commit();
         return req;
     }
     
     // reduce amount from seller's account
     std::string sql_update_num = 
     "UPDATE position SET NUM = NUM - " + amt +
-    " WHERE acc_id = " + acc_id + " AND symbol = " + txn.quote(req.sym)+ ";";
-    txn.exec0(sql_update_num);
+    " WHERE acc_id = " + acc_id + " AND symbol = " + txn_.quote(req.sym)+ ";";
+    txn_.exec0(sql_update_num);
     
     // create a transaction record
-    pqxx::result res = txn.exec_params(
+    pqxx::result res = txn_.exec_params(
         "INSERT INTO TRANSACTION (ACC_ID) VALUES ($1) RETURNING TRAN_ID", acc_id);
     std::string tran_id = res[0][0].as<std::string>();
+
+    txn_.commit();
+
+    // handle matching
+    pqxx::work txn(*C);
     
     // find all qualified opened buying orders
     std::string find_buyer = 
@@ -344,14 +351,6 @@ transct database::handle_sell(transct req){
         {
             break;
         }
-        
-        // add money to seller's account
-        // double fund_num = buyer_amt > amt_remain ? amt_remain : buyer_amt;
-        // std::string sql_update_bal = 
-        // "UPDATE account SET BALANCE = BALANCE + " + 
-        // to_string(fund_num * stod((buyer["price"].as<string>()))) +
-        // " WHERE acc_id = " + acc_id + ";";
-        // txn.exec0(sql_update_bal);
 
         if (buyer_amt == amt_remain)
         {   
@@ -360,7 +359,7 @@ transct database::handle_sell(transct req){
                 tran_id,
                 to_string(buyer_amt), 
                 buyer["price"].as<string>(), 
-                req.sym, &txn
+                req.sym, &txn, 1
             );
             
             amt_remain = 0;
@@ -374,7 +373,7 @@ transct database::handle_sell(transct req){
                 tran_id,
                 to_string(amt_remain), 
                 buyer["price"].as<string>(), 
-                req.sym, &txn
+                req.sym, &txn, 1
             );
             // put remaining amount in open table
             pqxx::result res = txn.exec_params(
@@ -398,7 +397,7 @@ transct database::handle_sell(transct req){
                 tran_id,
                 to_string(buyer_amt), 
                 buyer["price"].as<string>(), 
-                req.sym, &txn
+                req.sym, &txn, 1
             );
             amt_remain -= buyer_amt;
             continue;
@@ -463,7 +462,7 @@ transct database::handle_buy(transct req){
     // find all qualified opened buying orders
     std::string find_buyer = 
     "SELECT * FROM open WHERE "
-    "shares < 0 AND price <= $1 AND symbol = $2 ORDER BY price ASC, time ASC";
+    "shares < 0 AND price <= $1 AND symbol = $2 ORDER BY price ASC, time ASC FOR UPDATE";
     pqxx::result all_sellers = txn.exec_params(find_buyer, limit, req.sym);
 
     double amt_remain = stod(req.amount);
@@ -486,7 +485,7 @@ transct database::handle_buy(transct req){
                 seller["tran_id"].as<string>(),
                 to_string(seller_amt), 
                 seller["price"].as<string>(), 
-                req.sym, &txn
+                req.sym, &txn, 0
             );
 
             amt_remain = 0;
@@ -499,7 +498,7 @@ transct database::handle_buy(transct req){
                 seller["tran_id"].as<string>(),
                 to_string(amt_remain), 
                 seller["price"].as<string>(), 
-                req.sym, &txn
+                req.sym, &txn, 0
             );
 
             // put remaining amount in open table
@@ -523,7 +522,7 @@ transct database::handle_buy(transct req){
                 seller["tran_id"].as<string>(),
                 to_string(seller_amt), 
                 seller["price"].as<string>(), 
-                req.sym, &txn
+                req.sym, &txn, 0
             );
             amt_remain -= seller_amt;
         } 
@@ -659,8 +658,9 @@ transct database::handle_cancel(transct req){
     
     // buyer's refund
     if(shares_d > 0){
+        // dead
         std::string lock1 = 
-        "SELECT * FROM account WHERE acc_id = $1 FOR UPDATE";
+        "SELECT * FROM aCcount WHERE acc_id = $1 FOR UPDATE";
         txn.exec_params(lock1, acc_id);
         
         std::string sql_update_refund = 
