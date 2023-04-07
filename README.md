@@ -1,4 +1,4 @@
-# Stock dealing server
+# Stock Trading Server
 
 ## Featuers
 
