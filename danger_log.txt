@@ -1,0 +1,33 @@
+About concurrency
+	- Lock: In this program I used row level lock to avoid conflict between different transaction, this can avoid using lock in C++ code. I add row level lock
+	  when I need to update the row's value. To avoid dead lock, I must be very careful about the order of locking. 
+	
+	- Transaction: The designing of transaction is also very important in this project. In general, there are two stages when a new buy or sell coming. First stage 
+	   including verifying the order, reducing the balance or position from client's account, then creating open orders. The second stage is mathing the order
+	   and processing the order (increasing money or position in corresponding accounts and perheps some refunding) if there is a match. At the beginning 
+	   I try to finish these two stages in one transaction and there are a lot of problems and difficulting. Later I found out I can finish these two stages in two 
+	   sql transaction because these two stages do now need to be executed or rolled back at the same time.
+	
+	- Thread pool: I have built a thread pool, this can avoid creating new thread when we get new request and increased the performance of our server. If the 
+	   thread pool is full, the new coming task will wait until a running thread stop and notify one waiting task in the queue.
+
+About deadlock
+	- I have met with some of deadlock problems, the key to solve deadlock is to avoiding lock(A), lock(B), lock(A) in one function or lock(A), lock(B) in one function
+	  and lock(B) lock(A) in another function. I have spent lot of time solving one deadlock because I didn't know if you lock one row, you will lock every row related to 
+	  that row. 
+
+About precision
+	- I also solved some precision problems. I have found I would get 10.0999999999 when I send request with 10.1. Then I found this problem is because, we I use
+	   exec_params() function in pqxx, I was passing double rather than string. 
+
+About testing
+	1. Functional test:
+	   - I have created multiple folders including multiple kinds of test cases, in each folder there is a db_status.txt file including all values in database after executed all
+	     these test cases. And there is a response.xml file including all reponses returned by these requests. There is a test.sh file in each folder to run these testcases.
+		- basic_test: including create, cancel, regular orders, invalid create and query
+		- priority_buyer and priority_sell: sell and buy matching with muliple orders, chose the best fit
+		- partial_buy and partial_sell: partially matched sell or buy orders.
+		- test_create: test normal create and invalid creation request
+
+	2. Scalability test:
+	   - I will talk more about this part in writeup
